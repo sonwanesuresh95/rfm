@@ -1,2 +1,2 @@
 # rfm
-Package for RFM Analysis and Customer Segmentation
+Python Package for RFM Analysis and Customer Segmentation
