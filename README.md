@@ -27,6 +27,7 @@ breaking a sweat.
 ### Dependencies
 <ul>
   <li>Python (>=3.7)</li>
+  <li>Pandas (>=1.2.4)</li>
   <li>NumPy (>=1.20.1)</li>
   <li>matplotlib (>=3.3.4)</li>
 </ul>
