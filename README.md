@@ -6,12 +6,12 @@
 <br>
                                                                                                           
 # rfm
-rfm: Python Package for RFM Analysis and Customer Segmentation
+<b>rfm: Python Package for RFM Analysis and Customer Segmentation</b>
 
 **rfm** is a Python package that provides **recency, frequency, monetary analysis** results
 for a certain transactional dataset within a snap. Its flexible structure and multiple 
-functionalities provide easy and intuitive approach to RFM Analysis. It aims to be 
-a ready-made python package with high-level and quick prototyping.
+functionalities provide easy and intuitive approach to RFM Analysis in an automated fashion.
+It aims to be a ready-made python package with high-level and quick prototyping.
 On practical hand, **real world data** is easily suited and adapted by the package.
 Additionally, it can make colorful, intuitive graphs using a matplotlib backend without 
 breaking a sweat.
