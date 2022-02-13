@@ -4,7 +4,12 @@
 <img style="width:30%" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm-logos_black.png"><br>
 </div>
 <br>
-                                                                                                          
+
+[![PyPI Latest Release](https://img.shields.io/pypi/v/rfm.svg)](https://pypi.org/project/rfm/)
+![PyPI](https://badge.fury.io/py/rfm.svg)
+[![Package Status](https://img.shields.io/pypi/status/rfm.svg)](https://pypi.org/project/rfm/)
+[![License](https://img.shields.io/pypi/l/rfm.svg)](https://github.com/sonwanesuresh95/rfm/blob/main/LICENSE)
+
 # rfm
 <b>rfm: Python Package for RFM Analysis and Customer Segmentation</b>
 
