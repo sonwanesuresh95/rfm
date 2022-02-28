@@ -10,8 +10,8 @@ class RFM:
     
     Attributes:
     -----------
-    customer_df : dataframe with unique customers with their rfm values/scores
-    segment_df : dataframe with count of customers across all segments
+    rfm_table : dataframe with unique customers with their rfm values/scores
+    segment_table : dataframe with count of customers across all segments
 
     Parameters:
     -----------
@@ -30,8 +30,8 @@ class RFM:
         if automated:
             df_grp = self.produce_rfm_dateset(self.df)
             df_grp = self.calculate_rfm_score(df_grp)
-            self.customer_df = self.find_segments(df_grp)
-            self.segment_df = self.find_segment_df(self.customer_df)
+            self.rfm_table = self.find_segments(df_grp)
+            self.segment_table = self.find_segment_df(self.rfm_table)
         
     def produce_rfm_dateset(self, df:pd.DataFrame)->pd.DataFrame:
         """
@@ -54,7 +54,7 @@ class RFM:
             if 'date' in col.lower():
                 df[col] = pd.to_datetime(df[col])
         
-        df = df.sort_values(by=self.transaction_date)
+        df = df.sort_values(by=self.transaction_date, na_position='first')
         df[self.amount] = df[self.amount].apply(lambda x: float(x) if x not in ['','nan'] else 0)
         df = df.dropna(subset=[self.customer_id,self.amount])
         df = df.drop_duplicates()
@@ -74,6 +74,143 @@ class RFM:
         
         return df_grp[[self.customer_id, 'recency', 'frequency', 'monetary_value']]
     
+        # adding functionality for dynamic binning
+    def dynamic_cutoffs(self, df, column, n_bins=5):
+        """
+        dynamic_cutoffs(df, column, n_bins)
+        |  
+        |  calculates dynamic cutoffs for r,f,m values. 
+        |  consumed by "calculate_dynamic_rfm_score" function internally.
+        |
+        |  we use dynamic cutoffs for binning customers 
+        |  into rfm scores in a more sensible way 
+        |  rather than using statc cutoffs
+        |  
+        |  
+        |  Parameters:
+        |  -----------
+        |  df : pd.DataFrame object
+        |  column : str, name of columns for binning
+        |  n_bins : int, no. of bins to perform
+        |
+        |   Returns
+        |   -------
+        |       rfm_cutoffs : dict
+        """
+        dd = pd.DataFrame()
+        examples = 100
+        d = df[column].quantile([i/100 for i in range(1,101)]).to_dict()
+        d = pd.DataFrame({'%':d.keys(),column:d.values()})
+        while (n_bins > 1):
+            cutoff_percentile = d.iloc[int(examples/n_bins)][column]
+            mask = d[column] <= cutoff_percentile
+            d.loc[mask, 'bin_no'] = n_bins
+            new_index = d[d['bin_no'].isna()].index[0]
+            dd = pd.concat([dd,d[d['bin_no'].notna()]],axis=0).reset_index().drop('index',axis=1)
+            d = d.iloc[new_index:].reset_index().drop('index',axis=1)
+            examples = len(d)
+            n_bins = n_bins - 1
+            if n_bins == 1:
+                break
+        d['bin_no'] = n_bins
+        dd = pd.concat([dd,d[d['bin_no'].notna()]],axis=0).reset_index().drop('index',axis=1)
+        dd = dd.groupby('bin_no').agg(list).reset_index()
+        rfm_cutoffs = dict()
+        for bin_no in dd['bin_no']-1:
+            rfm_cutoffs[bin_no+1] = [min(dd[column][bin_no]),max(dd[column][bin_no])]
+        if column == 'recency':
+            return rfm_cutoffs
+        else:
+            rc = dict()
+            for k in range(1,len(rfm_cutoffs)+1):
+                rc[len(rfm_cutoffs)-k+1] = rfm_cutoffs[k]
+            return rc
+
+    def find_bin_no(self, x, col, cutoff):
+        """
+        find_bin_no(x, col, cutoff)
+        |  
+        |  function to apply on a column to find bin numbers of repective column values
+        |  
+        |  
+        |  Parameters:
+        |  -----------
+        |  x : input value for that record instance
+        |  col : str, column name
+        |  cutoff : dict, rfm_cutoff generated from dynamic_cutoffs & adjust_cutoffs
+        |
+        |   Returns
+        |   -------
+        |       k : int, bin number for respective input
+        """
+        for k in cutoff:
+            if cutoff[k][0] <= x <= cutoff[k][1]:
+                return k
+
+    def adjust_cutoffs(self, df, cutoff, col):
+        """
+        adjust_cutoffs(df, cutoff, col)
+        |  
+        |  function to adjust the threshold values of bins 
+        |  in an edge-to-edge fashion thus avoiding generation of any NA values
+        |  
+        |  
+        |  Parameters:
+        |  -----------
+        |  df : pd.DataFrame object, local instance of dataframe
+        |  cutoff : dict, rfm_cutoff generated from dynamic_cutoffs & adjust_cutoffs
+        |  col : str, name of column
+        |
+        |   Returns
+        |   -------
+        |       cutoff : dict, adjusted rfm cutoffs for binning purpose
+        """
+        if col == 'recency':
+            cutoff[5][0] = df['recency'].min()
+            cutoff[5][1] = cutoff[4][0]-1e-4
+            cutoff[4][1] = cutoff[3][0]-1e-4
+            cutoff[3][1] = cutoff[2][0]-1e-4
+            cutoff[2][1] = cutoff[1][0]-1e-4
+            cutoff[1][1] = df['recency'].max()
+        else:
+            cutoff[5][1] = df[col].max()
+            cutoff[4][1] = cutoff[5][0]-1e-4
+            cutoff[3][1] = cutoff[4][0]-1e-4
+            cutoff[2][1] = cutoff[3][0]-1e-4
+            cutoff[1][1] = cutoff[2][0]-1e-4
+            cutoff[1][0] = df[col].min()
+        return cutoff
+
+    def calculate_dynamic_rfm_score(self, df, n_bins):
+        """
+        calculate_dynamic_rfm_score(df, n_bins)
+        |  
+        |  dynamically calculate rfm scores (binning) and put into columns of master dataframe
+        | 
+        |  
+        |  Parameters:
+        |  -----------
+        |  df : pd.DataFrame object, local instance of dataframe
+        |  n_bins : number of bins for binning
+        |
+        |   Returns
+        |   -------
+        |       df : pd.DataFrame, with added rfm score columns: r, f, m, rfm
+        """
+        """
+        
+        """
+        recency_cutoffs = self.adjust_cutoffs(df, self.dynamic_cutoffs(df,'recency', n_bins),'recency')
+        frequency_cutoffs = self.adjust_cutoffs(df, self.dynamic_cutoffs(df,'frequency', n_bins),'frequency')
+        monetary_cutoffs = self.adjust_cutoffs(df, self.dynamic_cutoffs(df,'monetary_value', n_bins),'monetary_value')
+
+        df['r'] = df['recency'].apply(lambda x: int(self.find_bin_no(x, 'recency', recency_cutoffs)))
+        df['f'] = df['frequency'].apply(lambda x: self.find_bin_no(x, 'frequency', frequency_cutoffs))
+        df['m'] = df['monetary_value'].apply(lambda x: self.find_bin_no(x, 'monetary_value', monetary_cutoffs))
+        df['rfm_score'] = df['r'].apply(str) + df['f'].apply(str) + df['m'].apply(str)
+        return df
+
+
     def calculate_rfm_score(self, df:pd.DataFrame)->pd.DataFrame:
         """
         calculate_rfm_score(df)
@@ -110,27 +247,33 @@ class RFM:
         |  df : pd.DataFrame object
         """
         classes = []
+        classes_append = classes.append
+        cust = self.customer_id
         for row in df.iterrows():
-            if (row[1]['r'] in [4,5]) & (row[1]['f'] in [4,5]) & (row[1]['m'] in [4,5]):
-                classes.append({row[1][self.customer_id]:'Champions'})
-            elif (row[1]['r'] in [4,5]) & (row[1]['f'] in [1,2]) & (row[1]['m'] in [3,4,5]):
-                classes.append({row[1][self.customer_id]:'Promising'})
-            elif (row[1]['r'] in [3,4,5]) & (row[1]['f'] in [3,4,5]) & (row[1]['m'] in [3,4,5]):
-                classes.append({row[1][self.customer_id]:'Loyal Accounts'})
-            elif (row[1]['r'] in [3,4,5]) & (row[1]['f'] in [2,3]) & (row[1]['m'] in [2,3,4]):
-                classes.append({row[1][self.customer_id]:'Potential Loyalist'})
-            elif (row[1]['r'] in [3,4,5]) & (row[1]['f'] in [2,3,4,5]) & (row[1]['m'] in [1,2]):
-                classes.append({row[1][self.customer_id]:'Low Spenders'})
-            elif (row[1]['r'] in [5]) & (row[1]['f'] in [1]) & (row[1]['m'] in [1,2,3,4,5]):
-                classes.append({row[1][self.customer_id]:'New Active Accounts'})
-            elif (row[1]['r'] in [2,3]) & (row[1]['f'] in [1,2]) & (row[1]['m'] in [4,5]):
-                classes.append({row[1][self.customer_id]:'Need Attention'})
-            elif (row[1]['r'] in [2,3]) & (row[1]['f'] in [1,2]) & (row[1]['m'] in [1,2,3]):
-                classes.append({row[1][self.customer_id]:"About to Sleep"})
-            elif (row[1]['r'] in [1,2]) & (row[1]['f'] in [1,2,3,4,5]) & (row[1]['m'] in [3,4,5]):
-                classes.append({row[1][self.customer_id]:'At Risk'})
-            elif (row[1]['r'] in [1,2]) & (row[1]['f'] in [1,2,3,4,5]) & (row[1]['m'] in [1,2]):
-                classes.append({row[1][self.customer_id]:"Lost"})
+            rec = row[1]
+            r = rec['r']
+            f = rec['f']
+            m = rec['m']
+            if (r in (4,5)) & (f in (4,5)) & (m in (4,5)):
+                classes_append({rec[cust]:'Champions'})
+            elif (r in (4,5)) & (f in (1,2)) & (m in (3,4,5)):
+                classes_append({rec[cust]:'Promising'})
+            elif (r in (3,4,5)) & (f in (3,4,5)) & (m in (3,4,5)):
+                classes_append({rec[cust]:'Loyal Accounts'})
+            elif (r in (3,4,5)) & (f in (2,3)) & (m in (2,3,4)):
+                classes_append({rec[cust]:'Potential Loyalist'})
+            elif (r in (5,)) & (f in (1,)) & (m in (1,2,3,4,5)):
+                classes_append({rec[cust]:'New Active Accounts'})
+            elif (r in (3,4,5)) & (f in (1,2,3,4,5)) & (m in (1,2)):
+                classes_append({rec[cust]:'Low Spenders'})
+            elif (r in (2,3)) & (f in (1,2)) & (m in (4,5)):
+                classes_append({rec[cust]:'Need Attention'})
+            elif (r in (2,3)) & (f in (1,2)) & (m in (1,2,3)):
+                classes_append({rec[cust]:"About to Sleep"})
+            elif (r in (1,2)) & (f in (1,2,3,4,5)) & (m in (3,4,5)):
+                classes_append({rec[cust]:'At Risk'})
+            elif (r in (1,2)) & (f in (1,2,3,4,5)) & (m in (1,2)):
+                classes_append({rec[cust]:"Lost"})
             else:
                 classes.append({0:[row[1]['r'],row[1]['f'],row[1]['m']]})
         accs = [list(i.keys())[0] for i in classes]
@@ -146,7 +289,7 @@ class RFM:
         |
         |  Parameters:
         |  -----------
-        |  df : pd.DataFrame, customer_df, result from find_segments function
+        |  df : pd.DataFrame, rfm_table, result from find_segments function
         |
         |  Returns segment distribution dataframe
         """
@@ -165,11 +308,11 @@ class RFM:
         |
         |  Returns dataframe of customers with specified segment
         """
-        return self.customer_df[self.customer_df['segment'] == segment].reset_index(drop=True)
+        return self.rfm_table[self.rfm_table['segment'] == segment].reset_index(drop=True)
     
-    def distribution_plot(self, column:str, figsize=(10,5)):
+    def plot_column_distribution(self, column:str, figsize=(10,5)):
         """
-        distribution_plot(col, figsize)
+        plot_column_distribution(col, figsize)
         |
         |  shows distribution of entered column
         |
@@ -181,16 +324,16 @@ class RFM:
         |  Returns None
         """
         plt.figure(figsize=figsize)
-        plt.hist(self.customer_df[column], edgecolor='black')
+        plt.hist(self.rfm_table[column], edgecolor='black')
         plt.grid()
         plt.xlabel(column.capitalize())
         plt.ylabel('Count')
         plt.title(column.capitalize())
         plt.show()
     
-    def versace_plot(self, column1:str, column2:str, figsize=(10,7)):
+    def plot_versace_plot(self, column1:str, column2:str, figsize=(10,7)):
         """
-        versace_plot(column1, column2, figsize)
+        plot_versace_plot(column1, column2, figsize)
         |
         |  shows scatterplot of 2 columns : col1 vs col2
         |
@@ -204,16 +347,16 @@ class RFM:
         |  Returns None
         """
         plt.figure(figsize=figsize)
-        plt.scatter(self.customer_df[column1],self.customer_df[column2])
+        plt.scatter(self.rfm_table[column1],self.rfm_table[column2])
         plt.xlabel(column1.capitalize())
         plt.ylabel(column2.capitalize())
         plt.title(f'{column1.capitalize()} vs {column2.capitalize()}')
         plt.grid()
         plt.show()
         
-    def segment_distribution(self):
+    def plot_segment_distribution(self):
         """
-        segment_distribution()
+        plot_segment_distribution()
         |
         |  shows no. of customers across all segments
         |
@@ -221,19 +364,19 @@ class RFM:
         |
         |  Returns None
         """
-        x = self.segment_df['segment'][::-1]
-        y = self.segment_df['no of customers'][::-1]
+        x = self.segment_table['segment'][::-1]
+        y = self.segment_table['no of customers'][::-1]
         plt.figure(figsize=(8,5))
-        plt.barh(x,y,color=['indigo','blueviolet','royalblue','steelblue','darkblue','lime','forestgreen','yellow','orange','red'],edgecolor='black')
+        plt.barh(x,y,color=['#ec008c','#68217a','#00188f','#00bcf2','#00b294','#009e49','#bad80a','#fff100','#ff8c00','#e81123'],edgecolor='black')
         plt.xlabel('No of Customers')
         plt.ylabel('Segment')
         plt.title('Segment Distribution')
         plt.grid()
         plt.show()
         
-    def distribution_by_segment(self, column:str, take='median'):
+    def plot_distribution_by_segment(self, column:str, take='median'):
         """
-        distribution_by_segment(column, take)
+        plot_distribution_by_segment(column, take)
         |
         |  shows mean/median distribution of column by segment
         |
@@ -244,7 +387,7 @@ class RFM:
         |
         |  Returns None
         """
-        med = self.customer_df.groupby('segment',sort=False)[column].agg(lambda x: list(x)).reset_index()
+        med = self.rfm_table.groupby('segment',sort=False)[column].agg(lambda x: list(x)).reset_index()
         if take == 'median':
             med[column] = med[column].apply(np.median)
         if take == 'mean':
@@ -252,16 +395,16 @@ class RFM:
         x = med['segment'][::-1]
         y = med[column][::-1]
         plt.figure(figsize=(8,5))
-        plt.barh(x,y,color=['indigo','blueviolet','royalblue','steelblue','darkblue','lime','forestgreen','yellow','orange','red'],edgecolor='black')
+        plt.barh(x,y,color=['#ec008c','#68217a','#00188f','#00bcf2','#00b294','#009e49','#bad80a','#fff100','#ff8c00','#e81123'],edgecolor='black')
         plt.xlabel(f'{take} {column.capitalize()}')
         plt.ylabel('Segment')
         plt.title(f'{take} {column.capitalize()} by Segment')
         plt.grid()
         plt.show()
         
-    def rfm_histograms(self):
+    def plot_rfm_histograms(self):
         """
-        rfm_histograms()
+        plot_rfm_histograms()
         |
         |  shows histograms of r,f,m
         |
@@ -273,10 +416,31 @@ class RFM:
         fig.set_figheight(5)
         fig.set_figwidth(15)
         fig.suptitle('RFM Distributions')
-        axs[0].hist(self.customer_df['recency'],edgecolor='black')
+        axs[0].hist(self.rfm_table['recency'],edgecolor='black')
         axs[0].set_title('Recency')
-        axs[1].hist(self.customer_df['frequency'],edgecolor='black')
+        axs[1].hist(self.rfm_table['frequency'],edgecolor='black')
         axs[1].set_title('Frequency')
-        axs[2].hist(self.customer_df['monetary_value'],edgecolor='black')
+        axs[2].hist(self.rfm_table['monetary_value'],edgecolor='black')
         axs[2].set_title('Monetary Value')
+        plt.show()
+        
+    def plot_rfm_order_distribution(self):
+        """
+        plot_rfm_order_distribution()
+        |
+        |  shows number of orders vs number of customers
+        |
+        |  Parameters: None
+        |
+        |  Returns None
+        """
+        d = self.rfm_table.groupby('frequency').count().reset_index()
+        x = d['frequency']
+        y = d[self.customer_id]
+        plt.figure(figsize=(15,7))
+        plt.bar(x,y)
+        plt.xlabel('Orders')
+        plt.ylabel('Customers')
+        plt.title('Customers by Orders')
+        plt.grid()
         plt.show()
