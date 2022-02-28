@@ -1,7 +1,7 @@
 <br>
 <br>
 <div align="left">
-<img style="width:30%" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm-logos_black.png"><br>
+<img style="width:400px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm-logos_black.png"><br>
 </div>
 <br>
 
