@@ -51,7 +51,7 @@ $ pip install rfm
 ```
 
 <div align="left">
-  <img style="width:550px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/segment_dist.png"><br>
+  <img style="width:550px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_seg_dist.png"><br>
 </div>
 
 
