@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="rfm",
-    version="1.0.4",
+    version="1.0.7",
     author="Suresh Sonwane",
     author_email="sonwanesuresh739@gmail.com",
     description="Python Package for RFM Analysis and Customer Segmentation",
