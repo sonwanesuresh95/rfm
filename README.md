@@ -9,6 +9,7 @@
 ![PyPI](https://badge.fury.io/py/rfm.svg)
 [![Package Status](https://img.shields.io/pypi/status/rfm.svg)](https://pypi.org/project/rfm/)
 [![License](https://img.shields.io/pypi/l/rfm.svg)](https://github.com/sonwanesuresh95/rfm/blob/main/LICENSE)
+![Downloads Per Month](https://img.shields.io/pypi/dm/rfm)
 
 # rfm
 <b>rfm: Python Package for RFM Analysis and Customer Segmentation</b>
