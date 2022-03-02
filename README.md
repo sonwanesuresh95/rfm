@@ -77,7 +77,7 @@ Import RFM package and start rfm analysis automatically:
 ```
 If you want to do rfm analysis manually:
 ```
->>> r.RFM(df, customer_id='CustomerID', transaction_date='InvoiceDate', amount='Amount', automated=False)
+>>> r = RFM(df, customer_id='CustomerID', transaction_date='InvoiceDate', amount='Amount', automated=False)
 ```
 
 ## Attributes
