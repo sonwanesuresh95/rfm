@@ -48,7 +48,7 @@ $ pip install rfm
 
 >>> r = RFM(df, customer_id='CustomerID', transaction_date='InvoiceDate', amount='Amount')
 
->>> r.segment_distribution()
+>>> r.plot_segment_distribution()
 ```
 
 <div align="left">
