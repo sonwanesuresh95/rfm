@@ -71,13 +71,13 @@ Import RFM package and start rfm analysis automatically:
 ```
 >>> from rfm import RFM
 
->>> rfm = RFM(df, customer_id='CustomerID', transaction_date='InvoiceDate', amount='Amount') 
+>>> r = RFM(df, customer_id='CustomerID', transaction_date='InvoiceDate', amount='Amount') 
 
->>> rfm.rfm_table
+>>> r.rfm_table
 ```
 If you want to do rfm analysis manually:
 ```
->>> rfm.RFM(df, customer_id='CustomerID', transaction_date='InvoiceDate', amount='Amount', automated=False)
+>>> r.RFM(df, customer_id='CustomerID', transaction_date='InvoiceDate', amount='Amount', automated=False)
 ```
 
 ## Attributes
@@ -85,7 +85,7 @@ If you want to do rfm analysis manually:
 ### RFM.rfm_table
 returns resultant rfm table df generated with recency, frequency & monetary values and scores along with segments
 ```
->>> rfm.rfm_table
+>>> r.rfm_table
 ```
 <div align="left">
   <img style="width:500px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_table.png"><br>
@@ -94,7 +94,7 @@ returns resultant rfm table df generated with recency, frequency & monetary valu
 ### RFM.segment_table
 returns segment table df with 10 unique categories i.e. Champions, Loyal Accounts etc. 
 ```
->>> rfm.segment_table
+>>> r.segment_table
 ```
 <div align="left">
   <img style="height:250px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_segment_table.png"><br>
@@ -105,7 +105,7 @@ returns segment table df with 10 unique categories i.e. Champions, Loyal Account
 ### RFM.plot_rfm_histograms()
 Plots recency, frequency and monetary histograms in a single row
 ```
->>> rfm.plot_rfm_histograms()
+>>> r.plot_rfm_histograms()
 ```
 <div align="left">
   <img style="width:700px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_histograms.png"><br>
@@ -114,7 +114,7 @@ Plots recency, frequency and monetary histograms in a single row
 ### RFM.plot_rfm_order_distribution()
 Plots orders by customer number
 ```
->>> rfm.plot_rfm_order_distribution()
+>>> r.plot_rfm_order_distribution()
 ```
 <div align="left">
   <img style="width:700px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_order_dist.png"><br>
@@ -124,7 +124,7 @@ Plots orders by customer number
 Plots scatterplot of two input columns
 
 ```
->>> rfm.plot_versace_plot(column1='recency',column2='monetary_value')
+>>> r.plot_versace_plot(column1='recency',column2='monetary_value')
 ```
 
 <div align="left">
@@ -132,7 +132,7 @@ Plots scatterplot of two input columns
 </div>
 
 ```
->>> rfm.plot_versace_plot(column1='recency',column2='frequency')
+>>> r.plot_versace_plot(column1='recency',column2='frequency')
 ```
 
 <div align="left">
@@ -140,7 +140,7 @@ Plots scatterplot of two input columns
 </div>
 
 ```
->>> rfm.plot_versace_plot(column1='frequency',column2='monetary_value')
+>>> r.plot_versace_plot(column1='frequency',column2='monetary_value')
 ```
 
 <div align="left">
@@ -150,21 +150,21 @@ Plots scatterplot of two input columns
 ### RFM.plot_distribution_by_segment(column, take)
 Plots Distribution of input column by segment
 ```
->>> rfm.plot_distribution_by_segment(column='recency',take='median')
+>>> r.plot_distribution_by_segment(column='recency',take='median')
 ```
 <div align="left">
   <img style="width:550px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_mrdian_rec.png"><br>
 </div>
 
 ```
->>> rfm.plot_distribution_by_segment(column='frequency',take='median')
+>>> r.plot_distribution_by_segment(column='frequency',take='median')
 ```
 <div align="left">
   <img style="width:550px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_median_freq.png"><br>
 </div>
 
 ```
->>> rfm.plot_distribution_by_segment(column='monetary_value',take='median')
+>>> r.plot_distribution_by_segment(column='monetary_value',take='median')
 ```
 <div align="left">
   <img style="width:550px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_med_mon.png"><br>
@@ -173,21 +173,21 @@ Plots Distribution of input column by segment
 ### RFM.plot_column_distribution(column)
 Plots column distribution of input column
 ```
->>> rfm.plot_column_distribution(column='recency')
+>>> r.plot_column_distribution(column='recency')
 ```
 <div align="left">
   <img style="width:550px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_col_dist_rec.png"><br>
 </div>
 
 ```
->>> rfm.plot_column_distribution(column='frequency')
+>>> r.plot_column_distribution(column='frequency')
 ```
 <div align="left">
   <img style="width:550px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_col_dist_freq.png"><br>
 </div>
 
 ```
->>> rfm.plot_column_distribution(column='monetary_value')
+>>> r.plot_column_distribution(column='monetary_value')
 ```
 <div align="left">
   <img style="width:550px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_col_dist_mon.png"><br>
@@ -195,7 +195,7 @@ Plots column distribution of input column
 
 ### RFM.plot_segment_distribution()
 ```
->>> rfm.plot_segment_distribution()
+>>> r.plot_segment_distribution()
 ```
 Plots Segment Distribution, i.e. Segments vs no. of customers
 <div align="left">
@@ -205,7 +205,7 @@ Plots Segment Distribution, i.e. Segments vs no. of customers
 ### RFM.find_customers(segment)
 returns rfm results df with input category
 ```
->>> rfm.find_customers('Champions')
+>>> r.find_customers('Champions')
 ```
 <div align="left">
   <img style="width:550px" src="https://github.com/sonwanesuresh95/rfm/blob/main/example_/rfm_champions.png"><br>
